@@ -14,7 +14,7 @@ import sys
 height_std = 28.0
 features_all = []
 labels_all = []
-chars = [chr(x) for x in range(33, 127)]
+chars = [chr(x) for x in range(32, 127)]
 
 def parse_bbox(im, text_path):
     labels = []
@@ -52,13 +52,18 @@ def parse_bbox(im, text_path):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if len(args) != 3:
+    if len(args) == 3:
+        images_dir = args[0]
+        boxes_dir = args[1]
+        save_path = args[2]
+    elif len(args) == 0:
+        images_dir = os.path.expanduser('./images/')
+        boxes_dir = os.path.expanduser("./trans/")
+        save_path = os.path.expanduser('./data.pkl')
+    else:
         print("USAGE: get_data.py img_dir box_dir out_dir")
         sys.exit(1)
 
-    images_dir = args[0]
-    boxes_dir = args[1]
-    save_path = args[2]
 
     for root, dirs, files in os.walk(images_dir):
         for i, file in enumerate(files):

@@ -4,29 +4,6 @@ import theano
 import theano.tensor as T
 eps, epsinv = 1e-30, 1e30
 
-# def safe_log(x):
-    # return T.log(T.maximum(x, eps).astype(theano.config.floatX))
-
-# def safe_exp(x):
-    # return T.exp(T.minimum(x, epsinv).astype(theano.config.floatX))
-
-# def logadd_simple(x, y):
-    # return x + safe_log(1 + safe_exp(y - x))
-
-# def logadd_a# dvanced(x, y):
-    # maxx = tt.maximum(x, y)
-    # minn = tt.minimum(x, y)
-    # return maxx + tt.log(1 + tt.exp(minn - maxx))
-
-# def logadd(x, y, *zs, add=logadd_simple):
-    # sum = add(x, y)
-    # for z in zs:
-        # sum = add(sum, z)
-    # return sum
-
-# def logmul(x, y):
-    # return x + y
-
 class CTCLayer():
     def __init__(self, x, x_mask, y, y_clip,
             blank, prefix = 'ctc', log_space = True):
@@ -83,12 +60,12 @@ class CTCLayer():
                 )
 
         # prepare y_clip
-        y_clip1 = T.concatenate([(self.y_clip - 1)[:, None], self.y_clip[:, None]], axis = 1)
+        y_clip1 = T.concatenate([(self.y_clip - 2)[:, None], (self.y_clip - 1)[:, None]], axis = 1)
         self.prob = self.debug[-1][T.arange(n_samples)[:, None], y_clip1]
         self.pin = -T.log(T.maximum(T.sum(self.prob, axis=1), eps))
         # self.loss = T.mean(-T.log(T.sum(self.prob, axis=1)))
         self.loss = T.mean(self.pin)
 
     def log_ctc(self):
-        print("TODO")
+        print("NOT WORK WELL, DEPRECATED")
 

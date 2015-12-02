@@ -17,7 +17,8 @@ def shared(data, name = None):
 def _p(pp, name):
     return '%s_%s' % (pp, name)
 
-def prepare_data(file_path = os.path.expanduser('~/Documents/dataset/cnn-lstm-ctc/tiny.pkl'),
+def prepare_data(
+        file_path = os.path.expanduser('~/Documents/dataset/cnn-lstm-ctc/tiny.pkl'),
         is_shuffle = True,
         is_shared = True,
         n = None,
@@ -32,8 +33,8 @@ def prepare_data(file_path = os.path.expanduser('~/Documents/dataset/cnn-lstm-ct
         n_samples = len(xs)
         height = xs[0].shape[0]
         x_max_len = np.max([x.shape[1] for x in xs])
-        y_max_len = np.max([2 * len(y) + 1 for y in ys if y[-1] != n_classes])
-        print("x_max_len: {}, y_max_len: {}".format(x_max_len, y_max_len))
+        y_max_len = np.max([2 * len(y) + 1 for y in ys])
+        print("x_max_step: {}, y_max_width: {}".format(x_max_len, y_max_len))
 
         # x and x_mask
         x = np.zeros((n_samples, channels, height, x_max_len)). astype('float32')
@@ -70,6 +71,7 @@ def prepare_data(file_path = os.path.expanduser('~/Documents/dataset/cnn-lstm-ct
         if is_shared:
             values = [theano.shared(value) for value in values]
 
+        values.append(height)
         values.append(chars)
         return values
         # return x.reshape(x.shape[0], 1, x.shape[1], x.shape[2]), x_mask, y, y_clip, chars

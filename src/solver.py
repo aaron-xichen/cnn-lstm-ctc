@@ -5,26 +5,35 @@ import theano.tensor as T
 from net import Net
 import time
 from utee import prepare_data
+import os
 
 begin = time.time()
+
+# loading data
+print("loading data({})".format(time.time() - begin))
+x_data_train, x_mask_data_train, y_data_train, y_clip_data_train, height, chars = prepare_data(
+        file_path = os.path.expanduser('~/Documents/dataset/cnn-lstm-ctc/small.pkl'),
+        is_shared= False)
+
 # tensor
 print("building symbolic tensors({})".format(time.time() - begin))
 x =  T.tensor4('x')
 x_mask = T.fmatrix('x_mask')
 y = T.imatrix('y')
 y_clip = T.ivector('y_clip')
+index = T.lscalar('index')
 
 # setting parameters
 print("setting parameters({})".format(time.time() - begin))
 batch_size =  16
-channel = 1
-height = 28
-n_steps = 30
 lstm_hidden_units = 20
-n_classes = 96
-max_label_len = 20
+n_classes = len(chars) + 1 # additional seperate char in ctc
 learning_rate = 0.01
-n_iters = batch_size * 10
+n_epochs = 1
+
+# compute
+n_train_samples = len(x_data_train.get_value())
+n_train_iter = n_train_samples // batch_size
 
 # network structure
 options = dict()
@@ -38,40 +47,39 @@ print("building the model({})".format(time.time() - begin))
 net = Net(x = x, x_mask = x_mask, y = y, y_clip = y_clip, options = options)
 
 # compute the grad
-print("building updates and function({})".format(time.time() - begin))
+print("computing updates and function({})".format(time.time() - begin))
 loss = net.loss
 params = net.params.values()
 updates = []
 for param in params:
     updates.append((param, param - learning_rate * T.grad(loss, param)))
 
-f = theano.function([x, x_mask, y, y_clip],
-        [net.loss, net.softmax_matrix, net.prob, net.pin],
-        updates = updates)
+# build train function
+print("building training function({})".format(time.time() - begin))
+train  = theano.function(
+        inputs = [index],
+        # outputs = [net.loss, net.softmax_matrix, net.prob, net.pin],
+        outputs = [net.loss],
+        updates = updates,
+        givens = {
+            x : x_data_train[index * batch_size : (index + 1) * batch_size],
+            x_mask : x_mask_data_train[index * batch_size : (index + 1) * batch_size],
+            y : y_data_train[index * batch_size : (index + 1) * batch_size],
+            y_clip : y_clip_data_train[index * batch_size : (index + 1) * batch_size]
+            }
+        )
 
-# # sythenize data
-# x_data = np.random.rand(batch_size, channel, height, n_steps).astype('float32')
-# x_mask_data = np.random.randint(2, size=(batch_size, n_steps)).astype('float32')
-# y_data = np.random.randint(n_classes, size=(batch_size, max_label_len)).astype('int32')
-# y_clip_data = np.random.randint(2, max_label_len, size=(batch_size)).astype('int32')
+# build test function
+print("building testing function({})".format(time.time() - begin))
 
-# loading data
-print("loading data({})".format(time.time() - begin))
-x_data, x_mask_data, y_data, y_clip_data, chars = prepare_data(n = batch_size,
-        is_shared= False)
-
-# evaluation
-print("begin to train({})".format(time.time() - begin))
-for i in range(n_iters // batch_size):
-    print("...epoch {}/{}({})".format(i+1, n_iters // batch_size, time.time() - begin))
-    loss, softmax_matrix, prob, pin= f(x_data, x_mask_data, y_data, y_clip_data)
-    print("loss: {}({})".format(loss, time.time() - begin))
-    # print("softmax_matrix: ", softmax_matrix)
-    # print("probs: ", prob)
-    print("pin: ", pin)
+# turn on
+print("begin to train, reset the timer({})".format(time.time() - begin))
+begin = time.time()
+for epoch in range(n_epochs):
+    print(".epoch {}/{}({})".format(epoch+1, n_epochs, time.time() - begin))
+    losses = []
+    for i in range(n_train_iter):
+        loss = train(i)
+        print("..loss: {}, iter:{}/{}({})".format(loss, i+1, n_train_iter, time.time() - begin))
+        losses.append(loss)
 print("all done({})".format(time.time() - begin))
-# end = time.time()
-# print("cost {}s with batch_size {}".format(end - begin, batch_size))
-# print("loss: ", loss)
-# print("softmax_matrix:", softmax_matrix)
-# print("prob: ", prob)
