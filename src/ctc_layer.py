@@ -22,11 +22,13 @@ class CTCLayer():
         # prepare y
         n_samples, labels_len = self.y.shape
         y1 = T.concatenate([self.y, T.ones((self.y.shape[0], 2)) * self.blank], axis=1)
-        diag = T.neq(y1[:, :-2], y1[:, 2:]) * T.neq(y1[:, :-2], self.blank)
+        diag = T.neq(y1[:, :-2], y1[:, 2:]) * T.neq(y1[:, 2:], self.blank)
+        # diag = T.neq(y1[:, :-2], y1[:, 2:]) * T.neq(y1[:, :-2], self.blank)
         def _build_diag(_d):
             value = T.eye(labels_len) + \
             T.eye(labels_len, k=1) + \
-            T.eye(labels_len, k=2) * _d.dimshuffle((0, 'x'))
+            T.eye(labels_len, k=2) * _d[:, None]
+            # T.eye(labels_len, k=2) * _d.dimshuffle((0, 'x'))
             return value
         # stretch out, (labels_len, n_samples*labels_len)
         diags0, _ = theano.scan(fn = _build_diag,

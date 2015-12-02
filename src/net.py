@@ -26,6 +26,7 @@ class Net():
         self.layers.append(h1)
         self.params.update(h1.params)
         self.softmax_matrix = h1.output
+        self.pred = T.argmax(self.softmax_matrix, axis=2).T
 
         # CTC loss layer
         ctc = CTCLayer(x = h1.output, x_mask = x_mask, y = y, y_clip = y_clip,
