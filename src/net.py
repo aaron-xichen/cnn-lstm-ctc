@@ -2,36 +2,38 @@
 # encoding: utf-8
 
 import theano.tensor as T
-from lstm_layer import LSTMLayer
 from common_layers import HiddenLayer
 from ctc_layer import CTCLayer
 
 class Net():
     # x is 4d tensor, (batch_size, channels, height, width)
-    def __init__(self, x, x_mask, y, y_clip, options):
-        self.layers = []
+    def __init__(self, x, x_mask, y, y_clip, options, mid_layer_type = None, forget=True):
+        # self.layers = []
         self.params = dict()
+        assert mid_layer_type is not None
 
-        # LSTM layer
         self.x = x
-        lstm = LSTMLayer(x = x, x_mask = x_mask,
+        mid = mid_layer_type(x = x, x_mask = x_mask,
+                n_samples_const = options['batch_size'],
                 n_features = options['n_in_lstm_layer'],
-                n_hidden_units = options['n_out_lstm_layer'])
-        self.layers.append(lstm)
-        self.params.update(lstm.params)
-        self.param_w = lstm.param1
-        self.param_b = lstm.param2
-        self.x_prime = lstm.x_prime
-        self.lstm_output = lstm.output
+                n_hidden_units = options['n_out_lstm_layer'],
+                forget = forget)
+
+        # self.layers.append(mid)
+        self.params.update(mid.params)
+        self.mid_w = mid.param_w
+        self.mid_b = mid.param_b
+        # self.x_prime = mid.x_prime
+        self.mid_output = mid.output
 
         # Hidden layer with softmax activation function
-        h1 = HiddenLayer(input = lstm.output,
-                n_in = options['n_out_lstm_layer'],
+        h1 = HiddenLayer(input = mid.output,
+                n_in = mid.n_out,
                 n_out = options['n_out_hidden_layer'],
                 activation = T.nnet.softmax)
-        self.param_hw = h1.W
-        self.param_hb = h1.b
-        self.layers.append(h1)
+        self.h_w= h1.W
+        self.h_b = h1.b
+        # self.layers.append(h1)
         self.params.update(h1.params)
         self.pre_activation = h1.pre_activation
         self.softmax_matrix = h1.output
