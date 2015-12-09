@@ -12,6 +12,7 @@ large_part_path = os.path.expanduser('./large.pkl')
 test_part_path = os.path.expanduser('./test.pkl')
 
 with open(raw_file_path, 'r') as f:
+    print("load raw data")
     data = pkl.load(f)
     chars = data['chars']
     n_classes = len(chars)
@@ -24,6 +25,7 @@ with open(raw_file_path, 'r') as f:
     ys_shuffle = [ys[idx] for idx in perms]
 
     # 10 percent for testing
+    print("generate testing data")
     n_test = n_samples // 10
     x_test = [xs_shuffle[idx] for idx in range(n_test)]
     y_test = [ys_shuffle[idx] for idx in range(n_test)]
@@ -38,6 +40,7 @@ with open(raw_file_path, 'r') as f:
 
 
     # 1 percent of whole training data
+    print("generating small training data")
     n_small = n_samples // 100
     x_small = [xs[idx] for idx in range(n_small)]
     y_small = [ys[idx] for idx in range(n_small)]
@@ -47,6 +50,7 @@ with open(raw_file_path, 'r') as f:
 
 
     # 10 percent of whole training data
+    print("generating medium training data")
     n_medium = n_samples // 10
     x_medium = [xs[idx] for idx in range(n_medium)]
     y_medium = [ys[idx] for idx in range(n_medium)]
@@ -55,6 +59,7 @@ with open(raw_file_path, 'r') as f:
         pkl.dump(data_medium, fw)
 
     # 100 percent of whole training data
+    print("generating whole training data")
     data_large = {'x':xs, 'y':ys, 'chars':chars}
     with open(large_part_path, 'w') as fw:
         pkl.dump(data_large, fw)

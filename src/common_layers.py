@@ -83,19 +83,15 @@ class HiddenLayer(object):
         self.W = W
         self.b = b
 
-        lin_output = T.dot(input, self.W) + self.b
+        self.pre_activation = T.dot(input, self.W) + self.b
         if activation is None:
-            self.output = lin_output
+            self.output = self.pre_activation
         elif activation == T.nnet.softmax:
-            dims = lin_output.shape
-            n_dim = lin_output.ndim
-            tmp1 = lin_output.reshape((T.prod(dims[:n_dim-1]), dims[n_dim-1]))
-            # dim1, dim2, dim3, dim4 = lin_output.shape
-            # tmp1 = lin_output.reshape((dim1 * dim2 * dim3, dim4))
-            tmp2 = T.nnet.softmax(tmp1)
-            self.output = tmp2.reshape(dims)
+            shape= self.pre_activation.shape
+            tmp = self.pre_activation.reshape((T.prod(shape[:-1]), shape[-1]))
+            self.output = T.nnet.softmax(tmp).reshape(shape)
         else:
-            self.output = activation(lin_output)
+            self.output = activation(self.pre_activation)
 
         self.params = {_p(prefix, 'W'):W, _p(prefix, 'b'):b}
 

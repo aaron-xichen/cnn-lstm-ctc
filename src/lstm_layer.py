@@ -3,10 +3,8 @@
 
 import theano
 import theano.tensor as T
-# from theano import config
 import numpy as np
 from utee import np_floatX, _p, shared
-
 class LSTMLayer:
     # x: batch_size x channel x height x n_steps
     # x_mask: n_samples, n_steps
@@ -20,18 +18,18 @@ class LSTMLayer:
 
         # init the parameters
         self.params = dict()
-        W = np.concatenate([self.guassian_weight((n_features, n_hidden_units)),
-                            self.guassian_weight((n_features, n_hidden_units)),
-                            self.guassian_weight((n_features, n_hidden_units)),
-                            self.guassian_weight((n_features, n_hidden_units))],
+        W = np.concatenate([self.ortho_weight((n_features, n_hidden_units)),
+                            self.ortho_weight((n_features, n_hidden_units)),
+                            self.ortho_weight((n_features, n_hidden_units)),
+                            self.ortho_weight((n_features, n_hidden_units))],
                             axis=1)
         self.params[_p(prefix, 'W')] = shared(W)
-        U = np.concatenate([self.ortho_weight(n_hidden_units),
-                            self.ortho_weight(n_hidden_units),
-                            self.ortho_weight(n_hidden_units),
-                            self.ortho_weight(n_hidden_units)], axis=1)
+        U = np.concatenate([self.ortho_weight((n_hidden_units, n_hidden_units)),
+                            self.ortho_weight((n_hidden_units, n_hidden_units)),
+                            self.ortho_weight((n_hidden_units, n_hidden_units)),
+                            self.ortho_weight((n_hidden_units, n_hidden_units))], axis=1)
         self.params[_p(prefix, 'U')] = shared(U)
-        b = np.zeros((4 * n_hidden_units,))
+        b = np.random.rand(4 * n_hidden_units)
         self.params[_p(prefix, 'b')] = shared(b)
 
         # build the lstm model
@@ -41,10 +39,9 @@ class LSTMLayer:
             return _x[:, n * dim:(n + 1) * dim]
 
         def _step(m_, x_, h_, c_):
-            preact = T.dot(h_, self.params[_p(prefix, 'U')])
-            preact += x_
+            preact = T.dot(h_, self.params[_p(prefix, 'U')]) + x_
 
-            tmp = T.nnet.sigmoid(preact)
+            tmp = T.nnet.sigmoid(preact[:, :-n_hidden_units])
             i = _slice(tmp, 0, n_hidden_units)
             f = _slice(tmp, 1, n_hidden_units)
             o = _slice(tmp, 2, n_hidden_units)
@@ -54,30 +51,27 @@ class LSTMLayer:
             c = f * c_ + i * c
             c = m_[:, None] * c + (1. - m_)[:, None] * c_
 
-            h = o * T.tanh(c)
+            # h = o * T.tanh(c)
+            h = o * T.maximum(c, 0)
             h = m_[:, None] * h + (1. - m_)[:, None] * h_
 
             return h, c
 
-        x_prime = (T.dot(self.x, self.params[_p(prefix, 'W')]) +
-                    self.params[_p(prefix, 'b')])
+        self.param1 = self.params[_p(prefix, 'W')]
+        self.param2 = self.params[_p(prefix, 'b')][None, None, :]
+        self.x_prime = T.dot(self.x, self.params[_p(prefix, 'W')]) + self.params[_p(prefix, 'b')][None, None, :]
 
         rval, updates = theano.scan(_step,
-                                    sequences=[self.x_mask, x_prime],
-                                    outputs_info=[T.alloc(np_floatX(0.),
-                                                            n_samples,
-                                                            n_hidden_units),
-                                                T.alloc(np_floatX(0.),
-                                                            n_samples,
-                                                            n_hidden_units)],
+                                    sequences=[self.x_mask, self.x_prime],
+                                    outputs_info=[T.alloc(np_floatX(0.), n_samples, n_hidden_units),
+                                                T.alloc(np_floatX(0.), n_samples, n_hidden_units)],
                                     name=_p(prefix, '_layers'),
                                     n_steps=n_steps)
         self.output = rval[0]
 
-    def guassian_weight(self, size, mean = 0, std = 0.01):
-        return np.random.normal(mean, std, size)
-
-    def ortho_weight(self, ndim):
-        W = np.random.randn(ndim, ndim)
+    def ortho_weight(self, size):
+        assert len(size) == 2
+        m = np.max(size)
+        W = np.random.randn(m, m)
         u, s, v = np.linalg.svd(W)
-        return u
+        return u[:size[0], :size[1]]

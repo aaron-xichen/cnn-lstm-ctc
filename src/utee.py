@@ -38,12 +38,12 @@ def prepare_training_data(
         print("training, x_max_step: {}, y_max_width: {}".format(x_max_len, y_max_len))
 
         # x and x_mask
-        x = np.zeros((n_samples, channels, height, x_max_len)). astype('float32')
-        x_mask = np.zeros((n_samples, x_max_len)).astype('float32')
+        x = np.zeros((n_samples, channels, height, x_max_len)). astype(config.floatX)
+        x_mask = np.zeros((n_samples, x_max_len)).astype(config.floatX)
         for i, xx in enumerate(xs):
             shape = xx.shape
             assert height == shape[0]
-            x[i, :, :, :shape[1]] = xx.astype('float32')
+            x[i, :, :, :shape[1]] = xx.astype(config.floatX)
             x_mask[i, :shape[1]] = 1.0
 
 
@@ -96,12 +96,12 @@ def prepare_testing_data(
         print("testing, x_max_step: {}, y_max_width: {}".format(x_max_len, y_max_len))
 
         # x and x_mask
-        x = np.zeros((n_samples, channels, height, x_max_len)). astype('float32')
-        x_mask = np.zeros((n_samples, x_max_len)).astype('float32')
+        x = np.zeros((n_samples, channels, height, x_max_len)). astype(config.floatX)
+        x_mask = np.zeros((n_samples, x_max_len)).astype(config.floatX)
         for i, xx in enumerate(xs):
             shape = xx.shape
             assert height == shape[0]
-            x[i, :, :, :shape[1]] = xx.astype('float32')
+            x[i, :, :, :shape[1]] = xx.astype(config.floatX)
             x_mask[i, :shape[1]] = 1.0
 
 
@@ -133,6 +133,7 @@ def compute_acc(y_pred, y_gt, y_clip_gt, chars):
     seqs_pred = []
     seqs_gt = []
     accs = []
+    values = []
     for i in range(len(y_pred)):
         shrink = []
         for j in range(len(y_pred[i])):
@@ -140,11 +141,13 @@ def compute_acc(y_pred, y_gt, y_clip_gt, chars):
                 shrink.append(y_pred[i, j])
         seq_pred = "".join([chars[c] for c in shrink if c != len(chars)])
         seq_gt = "".join([chars[y_gt[i, j]] for j in range(y_clip_gt[i])])
-        acc = ed.eval(seq_pred, seq_gt) * 1.0 / len(seq_gt)
+        value = ed.eval(seq_pred, seq_gt) * 1.0 / len(seq_gt)
+        acc = seq_pred == seq_gt
         seqs_pred.append(seq_pred)
         seqs_gt.append(seq_gt)
+        values.append(value)
         accs.append(acc)
-    return accs, seqs_pred, seqs_gt
+    return seqs_pred, seqs_gt, accs, values
 
 
 
