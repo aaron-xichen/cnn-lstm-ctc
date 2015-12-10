@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+
 import theano
 from theano import config
 import numpy as np
@@ -18,6 +19,26 @@ def shared(data, name = None):
 def _p(pp, name):
     return '%s_%s' % (pp, name)
 
+# make a snapshot, params must be shared variable
+def snapshot(file_path, net):
+    print("saving snapshot to {}".format(file_path))
+    cellar = dict()
+    assert isinstance(net.params, dict)
+    for key, value in net.params.items():
+        cellar[key] = value.get_value()
+    with open(file_path, 'wb') as f:
+        pkl.dump(cellar, f)
+
+# resume from snaphot, params should be shared variable
+def resume_model(file_path, net):
+    print("resuming snapshot from {}".format(file_path))
+    with open(file_path, 'rb') as f:
+        params = pkl.load(f)
+    assert isinstance(net.params, dict)
+    for key, value in net.params.items():
+        assert key in params
+        value.set_value(params[key].astype(config.floatX))
+
 def prepare_training_data(
         file_path = None,
         is_shuffle = True,
@@ -35,7 +56,7 @@ def prepare_training_data(
         height = xs[0].shape[0]
         x_max_len = np.max([x.shape[1] for x in xs])
         y_max_len = np.max([2 * len(y) + 1 for y in ys])
-        print("training, x_max_step: {}, y_max_width: {}".format(x_max_len, y_max_len))
+        print("training data, x_max_step:{}, y_max_width:{}, n_samples:{}".format(x_max_len, y_max_len, n_samples))
 
         # x and x_mask
         x = np.zeros((n_samples, channels, height, x_max_len)). astype(config.floatX)
@@ -84,8 +105,6 @@ def prepare_testing_data(
         channels = 1):
     with open(file_path, 'r') as f:
         data = pkl.load(f)
-        # chars = data['chars']
-        # n_classes = len(chars)
         xs = data['x']
         ys = data['y']
         assert len(xs) == len(ys)
@@ -93,7 +112,7 @@ def prepare_testing_data(
         height = xs[0].shape[0]
         x_max_len = np.max([x.shape[1] for x in xs])
         y_max_len = np.max([len(y) for y in ys])
-        print("testing, x_max_step: {}, y_max_width: {}".format(x_max_len, y_max_len))
+        print("testing data, x_max_step:{}, y_max_width:{}, n_samples:{}".format(x_max_len, y_max_len, n_samples))
 
         # x and x_mask
         x = np.zeros((n_samples, channels, height, x_max_len)). astype(config.floatX)
