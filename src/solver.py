@@ -14,13 +14,17 @@ import numpy as np
 # begin to timming
 begin = time.time()
 
+# stride and patch_width
+stride = 7
+patch_width = [7]
+
 # loading data
 print("loading data({})".format(time.time() - begin))
 x_data_train, x_mask_data_train, y_data_train, y_clip_data_train, height, chars = prepare_training_data(
-        file_path = os.path.expanduser('~/Documents/dataset/cnn-lstm-ctc/small.pkl'),
-        is_shared= True,
-        is_shuffle = True)
-x_data_test, x_mask_data_test, y_data_test, y_clip_data_test = prepare_testing_data(is_shuffle = True)
+        file_path = os.path.expanduser('~/Documents/dataset/cnn-lstm-ctc/large.pkl'),
+        stride = stride, patch_width = patch_width)
+x_data_test, x_mask_data_test, y_data_test, y_clip_data_test, _, _= prepare_testing_data(
+        stride = stride, patch_width = patch_width)
 
 # build tensor
 print("building symbolic tensors({})".format(time.time() - begin))
@@ -39,7 +43,7 @@ print("n_classes: ", n_classes)
 learning_rate = 0.01
 momentum = None
 n_epochs = 100
-resume_path = None
+start_epoch = 0
 
 # compute samples num and iter
 n_train_samples = len(x_data_train.get_value())
@@ -80,8 +84,11 @@ else:
         updates.append((param, param - learning_rate * grad))
 
 # resume model
-if resume_path is not None:
+if start_epoch > 0:
+    resume_path = "../snapshot/{}.pkl".format(start_epoch)
     resume_model(resume_path, net)
+
+# if resume_path is not None:
 
 # build train function
 print("building training function({})".format(time.time() - begin))
@@ -110,8 +117,8 @@ test = theano.function(
 
 # turn on
 print("begin to train({})".format(time.time() - begin))
-for epoch in range(n_epochs):
-    print(".epoch {}/{} begin({:0.3f})".format(epoch+1, n_epochs, time.time() - begin))
+for epoch in range(start_epoch + 1, n_epochs):
+    print(".epoch {}/{} begin({:0.3f})".format(epoch, n_epochs, time.time() - begin))
     train_begin = time.time()
     for i in range(n_train_iter):
         loss = train(i)

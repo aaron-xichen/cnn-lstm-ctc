@@ -44,7 +44,9 @@ def prepare_training_data(
         is_shuffle = True,
         is_shared = True,
         n = None,
-        channels = 1):
+        channels = 1,
+        stride = 1,
+        patch_width = [1]):
     with open(file_path, 'r') as f:
         data = pkl.load(f)
         chars = data['chars']
@@ -56,16 +58,29 @@ def prepare_training_data(
         height = xs[0].shape[0]
         x_max_len = np.max([x.shape[1] for x in xs])
         y_max_len = np.max([2 * len(y) + 1 for y in ys])
-        print("training data, x_max_step:{}, y_max_width:{}, n_samples:{}".format(x_max_len, y_max_len, n_samples))
+        # transform
+        x_max_len = np.ceil(x_max_len * 1. / stride)
+        height = height * np.sum(patch_width)
+        print("training data, height: {}, x_max_step:{}, y_max_width:{}, n_samples:{}".
+                format(height, x_max_len, y_max_len, n_samples))
 
         # x and x_mask
         x = np.zeros((n_samples, channels, height, x_max_len)). astype(config.floatX)
         x_mask = np.zeros((n_samples, x_max_len)).astype(config.floatX)
         for i, xx in enumerate(xs):
             shape = xx.shape
-            assert height == shape[0]
-            x[i, :, :, :shape[1]] = xx.astype(config.floatX)
-            x_mask[i, :shape[1]] = 1.0
+            l = int(np.ceil(xx.shape[1] * 1. / stride))
+            for j in range(l):
+                long_vec = []
+                base = j * stride
+                for patch in patch_width:
+                    vec = np.zeros(shape[0] * patch).astype(config.floatX)
+                    vec2 = xx[:, base:base+patch].T.flatten()
+                    vec[:len(vec2)] = vec2
+                    long_vec = np.concatenate([long_vec, vec])
+                assert len(long_vec) == height
+                x[i, :, :, j] = long_vec
+            x_mask[i, :l] = 1.0
 
 
         # y and y_clip
@@ -100,29 +115,44 @@ def prepare_training_data(
 def prepare_testing_data(
         file_path = os.path.expanduser('~/Documents/dataset/cnn-lstm-ctc/test.pkl'),
         is_shuffle = True,
-        # is_shared = True,
         n = None,
-        channels = 1):
+        channels = 1,
+        stride = 1,
+        patch_width = [1]
+        ):
     with open(file_path, 'r') as f:
         data = pkl.load(f)
         xs = data['x']
         ys = data['y']
+        chars = data['chars']
         assert len(xs) == len(ys)
         n_samples = len(xs)
         height = xs[0].shape[0]
         x_max_len = np.max([x.shape[1] for x in xs])
         y_max_len = np.max([len(y) for y in ys])
-        print("testing data, x_max_step:{}, y_max_width:{}, n_samples:{}".format(x_max_len, y_max_len, n_samples))
+        # transform
+        x_max_len = np.ceil(x_max_len * 1. / stride)
+        height = height * np.sum(patch_width)
+        print("testing data, height: {}, x_max_step:{}, y_max_width:{}, n_samples:{}".
+                format(height, x_max_len, y_max_len, n_samples))
 
         # x and x_mask
         x = np.zeros((n_samples, channels, height, x_max_len)). astype(config.floatX)
         x_mask = np.zeros((n_samples, x_max_len)).astype(config.floatX)
         for i, xx in enumerate(xs):
             shape = xx.shape
-            assert height == shape[0]
-            x[i, :, :, :shape[1]] = xx.astype(config.floatX)
-            x_mask[i, :shape[1]] = 1.0
-
+            l = int(np.ceil(xx.shape[1] * 1. / stride))
+            for j in range(l):
+                long_vec = []
+                base = j * stride
+                for patch in patch_width:
+                    vec = np.zeros(shape[0] * patch).astype(config.floatX)
+                    vec2 = xx[:, base:base+patch].T.flatten()
+                    vec[:len(vec2)] = vec2
+                    long_vec = np.concatenate([long_vec, vec])
+                assert len(long_vec) == height
+                x[i, :, :, j] = long_vec
+            x_mask[i, :l] = 1.0
 
         # y and y_clip
         y = np.zeros((n_samples, y_max_len)).astype('int32')
@@ -143,9 +173,8 @@ def prepare_testing_data(
             values = [value[:n] for value in values]
 
         values = [theano.shared(values[0]), theano.shared(values[1]), values[2], values[3]]
-        # is shared
-        # if is_shared:
-            # values = [theano.shared(value) for value in values]
+        values.append(chars)
+        values.append(height)
         return values
 
 def compute_acc(y_pred, y_gt, y_clip_gt, chars):
