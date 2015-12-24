@@ -15,8 +15,8 @@ import numpy as np
 begin = time.time()
 
 # stride and patch_width
-stride = 7
-patch_width = [7]
+stride = 5
+patch_width = [5]
 
 # loading data
 print("loading data({})".format(time.time() - begin))
@@ -40,10 +40,13 @@ batch_size = 64
 lstm_hidden_units = 90
 n_classes = len(chars)
 print("n_classes: ", n_classes)
-learning_rate = 0.01
+learning_rate = theano.shared(np.float32(0.1))
 momentum = None
 n_epochs = 100
-start_epoch = 0
+start_epoch = 0 # for snapshot
+start_iters = 0
+steps = set([20, 30])
+alpha = 0.1
 
 # compute samples num and iter
 n_train_samples = len(x_data_train.get_value())
@@ -70,14 +73,14 @@ print("computing updates and function({})".format(time.time() - begin))
 updates = []
 if momentum is not None:
     assert momentum > 0 and momentum < 1
-    print("using momentum:{} and learning_rate:{}".format(momentum, learning_rate))
+    print("using momentum:{} and learning_rate:{}".format(momentum, learning_rate.get_value()))
     for name, param in net.params.items():
         m = theano.shared(param.get_value()*0., broadcastable=param.broadcastable)
         v = momentum * m - learning_rate * T.grad(net.loss, param)
         updates.append((m, v))
         updates.append((param, param + v))
 else:
-    print("using normal sgd and learning_rate:{}".format(learning_rate))
+    print("using normal sgd and learning_rate:{}".format(learning_rate.get_value()))
     for name, param in net.params.items():
         print(name, type(param))
         grad = T.grad(net.loss, param)
@@ -88,7 +91,6 @@ if start_epoch > 0:
     resume_path = "../snapshot/{}.pkl".format(start_epoch)
     resume_model(resume_path, net)
 
-# if resume_path is not None:
 
 # build train function
 print("building training function({})".format(time.time() - begin))
@@ -121,8 +123,13 @@ for epoch in range(start_epoch + 1, n_epochs):
     print(".epoch {}/{} begin({:0.3f})".format(epoch, n_epochs, time.time() - begin))
     train_begin = time.time()
     for i in range(n_train_iter):
+        start_iters = start_iters + 1
+        if start_iters in steps:
+            old_lr = learning_rate.get_value()
+            learning_rate.set_value(np.float32(old_lr * alpha))
+            print("change learning rate from {} to {}".format(old_lr, learning_rate.get_value()))
         loss = train(i)
-        print("..loss: {}, iter:{}/{}({:0.3f})".format(loss, i+1, n_train_iter, time.time() - train_begin))
+        print("..loss: {}, iter:{}/{}({}, {:0.3f}s)".format(loss, i+1, n_train_iter, start_iters, time.time() - train_begin))
         if np.isnan(loss) or np.isinf(loss):
             print("..detect nan")
             print("..loss: {}, iter:{}/{}({:0.3f})".format(loss, i+1, n_train_iter, time.time() - train_begin))
