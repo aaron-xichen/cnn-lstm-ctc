@@ -74,6 +74,7 @@ def resume_model(file_path, net):
     assert isinstance(net.params, dict)
     for key, value in net.params.items():
         assert key in params
+        print("copying {}".format(key))
         value.set_value(params[key].astype(config.floatX))
 
 class Prefetcher():

@@ -14,5 +14,8 @@ Please refer to `prepare_testing_data` and `prepare_traing_data` functions in sr
 # Usage
 Once the data is prepared, simplily run `python solver.py` to start the training procedure
 
+# Deamo
+**Deamo** contains online version of feedforward stage, which means you can simply invoke the API to recognize a given images, with given model path.
+
 # Others
 My own experiments shows that 92.8% accuracy can be obtained if trained on andequate training samples, say, 20W. In my own case, images are simply handwrite english words.
