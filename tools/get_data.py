@@ -69,7 +69,7 @@ if __name__ == "__main__":
     # for training
     print("saving to {}".format(out_train_imgs_list_path))
     with open(out_train_imgs_list_path, 'wb') as f:
-        f.write("32 127\n")
+        f.write("32 127\n") # chars range
         for i in idxs[:n_train_samples]:
             idx = idxs[i]
             img_save_path = "{}.jpg".format(i)
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     # for testing
     print("saving to {}".format(out_test_imgs_list_path))
     with open(out_test_imgs_list_path, 'wb') as f:
-        f.write("32 127\n")
+        f.write("32 127\n") # chars range
         for i in idxs[n_train_samples:]:
             idx = idxs[i]
             img_save_path = "{}.jpg".format(i)
