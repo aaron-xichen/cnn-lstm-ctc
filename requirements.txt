@@ -1,0 +1,2 @@
+theano==0.7.0
+editdistance==0.2

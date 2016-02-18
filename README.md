@@ -11,6 +11,24 @@
 
 Please refer to `prepare_testing_data` and `prepare_traing_data` functions in src/utee.py for more details
 
+# Installation
+
+Ubuntu:
+
+```
+sudo apt-get update
+sudo apt-get install -y libmagickwand-dev python-opencv
+pip install -r requirements.txt
+```
+
+Mac OS X:
+
+```
+brew tap homebrew/science
+brew install opencv
+pip install -r requirements.txt
+```
+
 # Usage
 Once the data is prepared, simplily run `python solver.py` to start the training procedure
 
