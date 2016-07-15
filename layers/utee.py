@@ -115,7 +115,7 @@ class Prefetcher():
                 self.idxs = np.random.permutation(self.n_samples)
             img_path = self.img_list[self.idxs[self.cur]]
             full_img_path = os.path.join(self.imgs_dirs, img_path)
-            im = cv2.imread(full_img_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+            im = cv2.imread(full_img_path, cv2.IMREAD_GRAYSCALE)
             features.append(im / 255.)
             labels.append(self.labels[self.idxs[self.cur]])
             self.cur += 1

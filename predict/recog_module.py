@@ -5,9 +5,9 @@ import theano
 import theano.tensor as T
 import numpy as np
 import time
-from net import Net
-from lstm_layer import BLSTMLayer
-from utee import resume_model
+from layers.net import Net
+from layers.lstm_layer import BLSTMLayer
+from layers.utee import resume_model
 
 class Recognition():
     def _build_network(self, tic = None):
@@ -159,7 +159,7 @@ class Recognition():
         self.batch_size = batch_size
         self.stride = stride
         self.patch_width = patch_width
-        self.chars = [chr(c) for c in range(33, 127)]
+        self.chars = [chr(c) for c in range(32, 127)]
 
         # build network and model
         self._build_network(tic)

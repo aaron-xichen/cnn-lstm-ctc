@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+import sys
+assert len(sys.argv) == 2, "Usage: python solver.py image_root_folder"
+
 import theano
 import theano.tensor as T
-from net import Net
+from layers.net import Net
 import time
-from utee import Prefetcher, compute_acc, snapshot, resume_model
-from lstm_layer import BLSTMLayer
-import sys
+from layers.utee import Prefetcher, compute_acc, snapshot, resume_model
+from layers.lstm_layer import BLSTMLayer
 import numpy as np
+import os
 
 # begin to timming
 begin = time.time()
@@ -20,11 +23,12 @@ height = 28 * np.sum(patch_width)
 batch_size = 64
 
 # loading data
-imgs_dir = '/share/data_for_BLSTM_CTC/Samples_for_English/20151205/imgs/'
-train_img_list = '/share/data_for_BLSTM_CTC/Samples_for_English/20151205/train_img_list.txt'
-test_img_list = '/share/data_for_BLSTM_CTC/Samples_for_English/20151205/test_img_list.txt'
+work_root = sys.argv[1]
+imgs_dir = os.path.join(work_root, 'split_tiny_images')
+train_img_list = os.path.join(work_root, 'train_img_list.txt')
+val_img_list = os.path.join(work_root, 'val_img_list.txt')
 training_data_prefetcher = Prefetcher(train_img_list, imgs_dir, batch_size, stride, patch_width)
-testing_data_prefetcher = Prefetcher(test_img_list, imgs_dir, batch_size, stride, patch_width)
+validating_data_prefetcher = Prefetcher(val_img_list, imgs_dir, batch_size, stride, patch_width)
 
 # build tensor
 print("building symbolic tensors({})".format(time.time() - begin))
@@ -46,19 +50,19 @@ chars = training_data_prefetcher.chars
 lstm_hidden_units = 90
 n_classes = len(chars)
 print("n_classes: ", n_classes)
-learning_rate = theano.shared(np.float32(0.1))
+learning_rate = theano.shared(np.float32(0.01))
 momentum = None
-n_epochs = 100
+n_epochs = 200
 start_epoch = 0 # for snapshot
 start_iters = 0
-multisteps = set()
+multisteps = set([100, 150])
 alpha = 0.1
 
 # compute samples num and iter
 n_train_samples = training_data_prefetcher.n_samples
-n_test_samples = testing_data_prefetcher.n_samples
+n_val_samples = validating_data_prefetcher.n_samples
 n_train_iter = n_train_samples // batch_size
-n_test_iter = n_test_samples // batch_size
+n_val_iter = n_val_samples // batch_size
 
 # network configuration
 options = dict()
@@ -112,9 +116,9 @@ train  = theano.function(
             }
         )
 
-# build test function
-print("building testing function({})".format(time.time() - begin))
-test = theano.function(
+# build valdiating function
+print("building validating function({})".format(time.time() - begin))
+val = theano.function(
         inputs = [x, x_mask],
         outputs = net.pred,
         )
@@ -143,25 +147,25 @@ for epoch in range(start_epoch + 1, n_epochs):
             print("..loss: {}, iter:{}/{}({:0.3f})".format(loss, i+1, n_train_iter, time.time() - train_begin))
             sys.exit()
 
-    snapshot_path = "../snapshot/{}.pkl".format(epoch)
+    snapshot_path = "snapshot/{}.pkl".format(epoch)
     snapshot(snapshot_path, net)
-    test_begin = time.time()
-    print(".epoch done, testing({:0.3f})".format(test_begin - train_begin))
+    val_begin = time.time()
+    print(".epoch done, validating({:0.3f})".format(val_begin - train_begin))
     seqs_pred = []
     seqs_gt = []
     accs = []
     values = []
-    for i in range(n_test_iter):
-        x_slice, x_mask_slice, y_slice, y_clip_slice = testing_data_prefetcher.fetch_next(False)
-        y_pred = test(x_slice, x_mask_slice)
-        print("..processed {}/{}({:0.3f})".format(i+1, n_test_iter, time.time() - test_begin))
+    for i in range(n_val_iter):
+        x_slice, x_mask_slice, y_slice, y_clip_slice = validating_data_prefetcher.fetch_next(False)
+        y_pred = val(x_slice, x_mask_slice)
+        print("..processed {}/{}({:0.3f})".format(i+1, n_val_iter, time.time() - val_begin))
         assert len(y_pred) == len(y_slice)
         seqs_pred_new, seqs_gt_new, accs_new, values_new = compute_acc(y_pred, y_slice, y_clip_slice, chars)
         seqs_pred.extend(seqs_pred_new) # seqs_pred_new is a list
         seqs_gt.extend(seqs_gt_new) # seqs_gt_new is a list
         accs.extend(accs_new) # accs_new is a list
         values.extend(values_new) # vlues_new is a list
-    print(".testing done({:0.3f})".format(time.time()- test_begin))
+    print(".validating done({:0.3f})".format(time.time()- val_begin))
     for i in range(min(10, batch_size)):
         print(".seen: {}, predict: {}".format(seqs_gt[i], seqs_pred[i]))
     accuracy = np.sum(accs) * 1.0 / len(accs)

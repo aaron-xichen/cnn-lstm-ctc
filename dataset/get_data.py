@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 import os
 import re
+import sys
 
 height_std = 28.0
 chars = [chr(x) for x in range(32, 127)]
@@ -41,11 +42,16 @@ def parse_bbox(im, text_path):
     return features, labels
 
 if __name__ == "__main__":
-    images_dir = os.path.expanduser('./images/')
-    boxes_dir = os.path.expanduser("./trans/")
-    out_imgs_dir = os.path.expanduser('./imgs/')
-    out_train_imgs_list_path = os.path.expanduser('./train_img_list.txt')
-    out_test_imgs_list_path = os.path.expanduser('./test_img_list.txt')
+    assert len(sys.argv) == 2, 'Usage: python get_data.py root_folder'
+
+    work_root = sys.argv[1]
+    images_dir = os.path.join(work_root, 'images')
+    boxes_dir = os.path.join(work_root, 'trans')
+    out_imgs_dir = os.path.join(work_root, 'split_tiny_images')
+    out_train_imgs_list_path = os.path.join(work_root, 'train_img_list.txt')
+    out_val_imgs_list_path = os.path.join(work_root, 'val_img_list.txt')
+    out_test_imgs_list_path = os.path.join(work_root, 'test_img_list.txt')
+    print(images_dir)
 
     features_all = []
     labels_all = []
@@ -63,8 +69,11 @@ if __name__ == "__main__":
 
     print("total samples: {}".format(len(labels_all)))
     idxs = np.random.permutation(len(features_all))
+
+    # split to train, val and test set (90:9:1)
     n_train_samples = int(0.9 * len(features_all))
-    print("n_train_samples: {}, n_test_samples{}".format(n_train_samples, len(features_all) - n_train_samples))
+    n_val_samples = int(0.09 * len(features_all))
+    print("n_train_samples: {}, n_val_samples: {}, n_test_samples: {}".format(n_train_samples, n_val_samples, len(features_all) - n_train_samples - n_val_samples))
 
     # for training
     print("saving to {}".format(out_train_imgs_list_path))
@@ -79,11 +88,24 @@ if __name__ == "__main__":
             record = img_save_path + " " + " ".join(labels_str) + "\n"
             f.write(record)
 
+    # for validating
+    print("saving to {}".format(out_val_imgs_list_path))
+    with open(out_val_imgs_list_path, 'wb') as f:
+        f.write("32 127\n") # chars range
+        for i in idxs[n_train_samples:(n_train_samples+n_val_samples)]:
+            idx = idxs[i]
+            img_save_path = "{}.jpg".format(i)
+            img_save_full_path = os.path.join(out_imgs_dir, img_save_path)
+            cv2.imwrite(img_save_full_path, features_all[idx])
+            labels_str = [str(c) for c in labels_all[idx]]
+            record = img_save_path + " " + " ".join(labels_str) + "\n"
+            f.write(record)
+
     # for testing
     print("saving to {}".format(out_test_imgs_list_path))
     with open(out_test_imgs_list_path, 'wb') as f:
         f.write("32 127\n") # chars range
-        for i in idxs[n_train_samples:]:
+        for i in idxs[(n_train_samples+n_val_samples):]:
             idx = idxs[i]
             img_save_path = "{}.jpg".format(i)
             img_save_full_path = os.path.join(out_imgs_dir, img_save_path)
