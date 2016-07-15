@@ -1,4 +1,4 @@
-model_path=snapshot/15.pkl
+model_path=snapshot/99.pkl
 test_img_list_path=./dataset/english_sentence/test_img_list.txt
 test_output_dir=./dataset/english_sentence/test_output
 

@@ -1,11 +1,11 @@
-This repository is only for study, please *do not* use for commercial. Also currently CNN module is not 
+- This repository is only for study, please **do not** use for commercial.
 
 # Theano implementation of LSTM and CTC
 - Support GPU accelaration. (Only when the model is complicated enough the GPU acceleration can be seen)
 - Support LogCTC, which prevents from overflow issue
 - Support batch training, which means that different width of images can be packed into a single mini-batch
 - Support prediction alone script, useful to test and release.
-- Currently no support CNN feature extraction, as there are plenty framework to do so. Raw pixel features in gray scale are feed directly into LSTM and CTC layers.
+- Currently not support CNN feature extraction, as there are plenty framework to do so. Raw pixel features in gray scale are feed directly into LSTM and CTC layers.
 
 # Data format
 - **x** is a list of images. The size of each image should have identical height, and the width varies. 
@@ -14,7 +14,6 @@ This repository is only for study, please *do not* use for commercial. Also curr
 - **y_clip** is a vector, similar as **x_mask**, however in more compact format. Each element represents the real length of corresponding label. 
 
 # Installation
-
 Ubuntu:
 
 ```
@@ -53,7 +52,7 @@ sh train.sh
 
 # Predict
 - After training converged and finished, pick the favorite model in **snapshot** folder, say, **99.pkl**.
-- Open [predict.sh](predict.sh) and modify `model_path=snapshot/15.pkl` 
+- Open [predict.sh](predict.sh) and modify `model_path=snapshot/99.pkl` 
 ```
 cd /path/to/cnn-lstm-ctc/
 vim predict.sh
