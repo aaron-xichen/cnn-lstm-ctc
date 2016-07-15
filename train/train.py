@@ -43,6 +43,11 @@ x_mask_shared = theano.shared(np.zeros((10, 10)).astype(theano.config.floatX))
 y_shared = theano.shared(np.zeros((10, 50)).astype('int32'))
 y_clip_shared = theano.shared(np.zeros(50).astype('int32'))
 
+# compute samples num and iter
+n_train_samples = training_data_prefetcher.n_samples
+n_val_samples = validating_data_prefetcher.n_samples
+n_train_iter = n_train_samples // batch_size
+n_val_iter = n_val_samples // batch_size
 
 # setting parameters
 print("setting parameters({})".format(time.time() - begin))
@@ -55,14 +60,10 @@ momentum = None
 n_epochs = 200
 start_epoch = 0 # for snapshot
 start_iters = 0
-multisteps = set([100, 150])
+multisteps = set([100 * n_train_iter, 150 * n_train_iter, 175 * n_train_iter])
+print("multi-step: ", multisteps)
 alpha = 0.1
 
-# compute samples num and iter
-n_train_samples = training_data_prefetcher.n_samples
-n_val_samples = validating_data_prefetcher.n_samples
-n_train_iter = n_train_samples // batch_size
-n_val_iter = n_val_samples // batch_size
 
 # network configuration
 options = dict()
