@@ -35,7 +35,7 @@ Add package path to your environment, for example
 `export PYTHONPATH=/path/to/cnn-lstm-ctc/:$PYTHONPATH`
 
 # Get Data
-- Pull all codes and data, including **english_sentence.tar.gz** in [dataset](dataset) folder
+- Pull all codes and data, including **english_sentence.tar.gz** in **dataset** folder
 - Extract the files and run [get_data.sh](get_data.sh)
 ```
 cd /path/to/cnn-lstm-ctc/
@@ -52,7 +52,7 @@ sh train.sh
 ```
 
 # Predict
-- After training converged and finished, pick the favorite model in [snapshot](snapshot) folder, say, **99.pkl**.
+- After training converged and finished, pick the favorite model in **snapshot** folder, say, **99.pkl**.
 - Open [predict.sh](predict.sh) and modify `model_path=snapshot/15.pkl` 
 ```
 cd /path/to/cnn-lstm-ctc/
