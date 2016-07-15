@@ -33,8 +33,10 @@ pip install -r requirements.txt
 Add package path to your environment, for example
 `export PYTHONPATH=/path/to/cnn-lstm-ctc/:$PYTHONPATH`
 
+[Opencv3](http://opencv.org/) is need
+
 # Get Data
-- Pull all codes and data, including **english_sentence.tar.gz** in **dataset** folder
+- Pull all codes and data, including **english_sentence.tar.gz** (~21MB) in **dataset** folder
 - Extract the files and run [get_data.sh](get_data.sh)
 ```
 cd /path/to/cnn-lstm-ctc/
