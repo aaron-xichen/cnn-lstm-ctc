@@ -3,3 +3,4 @@
 *.txt
 *.pkl
 dataset/english_sentence
+script/.ipynb_checkpoints
