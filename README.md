@@ -33,7 +33,7 @@ pip install -r requirements.txt
 Add package path to your environment, for example
 `export PYTHONPATH=/path/to/cnn-lstm-ctc/:$PYTHONPATH`
 
-[Opencv3](http://opencv.org/) is needed
+[OpenCV3](http://opencv.org/) is needed
 
 # Get Data
 - Pull all codes and data, including **english_sentence.tar.gz** (~21MB) in **dataset** folder
@@ -46,15 +46,20 @@ cd ..
 sh get_data.sh
 ```
 
-# Training
+# Train
 ```
 cd /path/to/cnn-lstm-ctc/
 sh train.sh
 ```
+A typical validation accuracy curve within 200 epochs, lr=0.01, gamma=0.1, multistep_epoch=[100, 150, 175], cost 28.255 hours. (In this repository only 0.01% data are released due to privacy)
+
+![validation accuracy curve](script/val_acc.jpg)
+
+The best result occurs in epoch 188 with 67.152%
 
 # Predict
-- After training converged and finished, pick the favorite model in **snapshot** folder, say, **99.pkl**.
-- Open [predict.sh](predict.sh) and modify `model_path=snapshot/99.pkl` 
+- After training converged and finished, pick the favorite model in **snapshot** folder, say, **188.pkl**.
+- Open [predict.sh](predict.sh) and modify `model_path=snapshot/188.pkl` 
 ```
 cd /path/to/cnn-lstm-ctc/
 vim predict.sh
@@ -63,4 +68,4 @@ sh predict.sh
 
 # Others
 - The first time to compile the train and val function in [train/train.py](train/train.py) takes long, maybe 10-15 mins
-- For simple english word recognition task, with sufficient data, 92.8% accuracy can be obtained after 200 epoch. (In this repository only 0.01% data are released due to privacy)
+- For simple english word recognition task, with whole dataset, 92.8% accuracy can be obtained after 200 epoch. 
